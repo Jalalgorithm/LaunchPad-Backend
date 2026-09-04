@@ -1,0 +1,99 @@
+services:
+  - type: web
+    name: launchpad-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+
+      # Provision a separate MySQL instance for LaunchPad (Clever Cloud free
+      # tier or similar) — do NOT reuse another project's database.
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_POOL_LIMIT
+        value: 5
+
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_STEP_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRY
+        value: 15m
+      - key: JWT_REFRESH_EXPIRY
+        value: 30d
+
+      - key: OTP_PEPPER
+        generateValue: true
+
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: LaunchPad
+
+      - key: IGMS_EMAIL_FROM_NAME
+        value: IGMS
+      - key: IGMS_EMAIL_FROM
+        sync: false
+      - key: IGMS_ADMIN_EMAIL
+        sync: false
+      # The IGMS marketing-site (menospace.uk) frontend's deployed URL — also
+      # allow-listed for CORS, see src/app.ts's allowedOrigins.
+      - key: IGMS_SITE_URL
+        sync: false
+      - key: IGMS_LOGO_URL
+        sync: false
+
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+
+      # The LaunchPad frontend's deployed URL.
+      - key: FRONTEND_URL
+        sync: false
+      # Anything beyond FRONTEND_URL/IGMS_SITE_URL — comma-separated.
+      - key: CORS_EXTRA_ORIGINS
+        sync: false
+
+      # App and API sit on different registrable domains on Render, so
+      # cookies need SameSite=None — requires HTTPS on both, which Render
+      # provides by default.
+      - key: COOKIE_SAMESITE
+        value: none
+      - key: COOKIE_DOMAIN
+        sync: false
+
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 300
+
+      - key: SWAGGER_ENABLED
+        value: "true"
