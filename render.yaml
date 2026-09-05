@@ -3,7 +3,11 @@ services:
     name: launchpad-backend
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    # --include=dev is required: NODE_ENV=production below makes npm set
+    # omit=dev, which would skip typescript and fail the build with
+    # "tsc: not found". The compiler is a devDependency but is needed to
+    # produce dist/, which startCommand then runs.
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
