@@ -1,8 +1,18 @@
 import "dotenv/config";
 import { z } from "zod";
 
+/**
+ * An enum that tolerates the casing and stray whitespace you get from values
+ * typed by hand into a hosting dashboard — "Production" and " production " both
+ * resolve. It still rejects anything genuinely unrecognised: NODE_ENV decides
+ * whether cookies are Secure and whether Swagger is exposed, so a value we
+ * can't interpret must stop the boot rather than quietly fall back.
+ */
+const looseEnum = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.enum(values));
+
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: looseEnum(["development", "production", "test"] as const).default("development"),
   PORT: z.coerce.number().default(4000),
 
   DB_HOST: z.string().min(1),
@@ -62,7 +72,7 @@ const envSchema = z.object({
   // "strict" is right when the API and the app share a registrable domain
   // (launchpad.dev + api.launchpad.dev, or both on localhost). A genuinely
   // cross-site deployment needs "none", which browsers only honour over HTTPS.
-  COOKIE_SAMESITE: z.enum(["strict", "lax", "none"]).default("strict"),
+  COOKIE_SAMESITE: looseEnum(["strict", "lax", "none"] as const).default("strict"),
   COOKIE_DOMAIN: z.string().default(""),
 
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
@@ -71,7 +81,7 @@ const envSchema = z.object({
   SWAGGER_ENABLED: z
     .string()
     .default("true")
-    .transform((v) => v === "true"),
+    .transform((v) => v.trim().toLowerCase() === "true"),
 });
 
 const parsed = envSchema.safeParse(process.env);
