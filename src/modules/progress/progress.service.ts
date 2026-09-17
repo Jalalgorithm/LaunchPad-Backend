@@ -24,6 +24,9 @@ export interface MyProgress {
   translateCompleted: boolean;
   pathway: Pathway | null;
   unlockedPathways: Pathway[];
+  /** Adult Pathway: which optional sections the user has switched on — a view preference, not progress. */
+  esolModuleOn: boolean;
+  rqfModuleOn: boolean;
 }
 
 interface EnrollmentRow extends RowDataPacket {
@@ -44,11 +47,13 @@ async function getEnrollments(userId: string): Promise<Map<CourseKey, Enrollment
 interface UserPathwayRow extends RowDataPacket {
   pathway: Pathway | null;
   date_of_birth: Date | null;
+  esol_module_on: number;
+  rqf_module_on: number;
 }
 
 async function getUserPathwayRow(userId: string): Promise<UserPathwayRow> {
   const [rows] = await pool.query<UserPathwayRow[]>(
-    "SELECT pathway, date_of_birth FROM users WHERE id = ? LIMIT 1",
+    "SELECT pathway, date_of_birth, esol_module_on, rqf_module_on FROM users WHERE id = ? LIMIT 1",
     [userId]
   );
   const row = rows[0];
@@ -81,7 +86,33 @@ export async function getMyProgress(userId: string): Promise<MyProgress> {
     translateCompleted,
     pathway: userRow.pathway,
     unlockedPathways: unlocked,
+    esolModuleOn: Boolean(userRow.esol_module_on),
+    rqfModuleOn: Boolean(userRow.rqf_module_on),
   };
+}
+
+/** Adult Pathway view preference — which optional sections are switched on. Partial update. */
+export async function setAdultModules(
+  userId: string,
+  input: { esolModuleOn?: boolean; rqfModuleOn?: boolean }
+): Promise<{ esolModuleOn: boolean; rqfModuleOn: boolean }> {
+  const updates: string[] = [];
+  const values: number[] = [];
+  if (input.esolModuleOn !== undefined) {
+    updates.push("esol_module_on = ?");
+    values.push(input.esolModuleOn ? 1 : 0);
+  }
+  if (input.rqfModuleOn !== undefined) {
+    updates.push("rqf_module_on = ?");
+    values.push(input.rqfModuleOn ? 1 : 0);
+  }
+
+  if (updates.length > 0) {
+    await pool.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, [...values, userId]);
+  }
+
+  const userRow = await getUserPathwayRow(userId);
+  return { esolModuleOn: Boolean(userRow.esol_module_on), rqfModuleOn: Boolean(userRow.rqf_module_on) };
 }
 
 /**
@@ -90,10 +121,12 @@ export async function getMyProgress(userId: string): Promise<MyProgress> {
  * no-op, not a reset back to 'enrolled'.
  */
 export async function enrollInCourse(userId: string, courseKey: CourseKey): Promise<CourseStatusEntry> {
-  if (COURSES[courseKey].group === "rise") {
+  const group = COURSES[courseKey].group;
+  if (group === "rise" || group === "adult") {
     const userRow = await getUserPathwayRow(userId);
-    if (userRow.pathway !== "rise") {
-      throw ApiError.forbidden("This course is only available on the RISE+ pathway.");
+    if (userRow.pathway !== group) {
+      const pathwayLabel = group === "rise" ? "RISE+" : "Adult";
+      throw ApiError.forbidden(`This course is only available on the ${pathwayLabel} pathway.`);
     }
   }
 

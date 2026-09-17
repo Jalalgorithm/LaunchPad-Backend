@@ -29,3 +29,9 @@ export async function issueMyCertificateLink(req: Request, res: Response) {
   const link = await progressService.issueMyCertificateLink(req.user!.id);
   sendSuccess(res, 201, "Certificate ready.", link);
 }
+
+export async function setAdultModules(req: Request, res: Response) {
+  const input = req.body as { esolModuleOn?: boolean; rqfModuleOn?: boolean };
+  const result = await progressService.setAdultModules(req.user!.id, input);
+  sendSuccess(res, 200, "Modules updated.", result);
+}

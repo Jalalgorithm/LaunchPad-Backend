@@ -18,10 +18,21 @@ const chatTurnSchema = z.object({
   content: z.string().min(1).max(2000),
 });
 
-export const chatBodySchema = z.object({
-  provider: providerSchema,
-  messages: z.array(chatTurnSchema).min(1).max(20),
-});
+const chatMessagesSchema = z.array(chatTurnSchema).min(1).max(20);
+
+export const chatBodySchema = z.discriminatedUnion("persona", [
+  z.object({ persona: z.literal("thrive"), provider: providerSchema, messages: chatMessagesSchema }),
+  z.object({ persona: z.literal("adult"), provider: providerSchema, messages: chatMessagesSchema }),
+  z.object({ persona: z.literal("school"), provider: providerSchema, messages: chatMessagesSchema }),
+  z.object({
+    persona: z.literal("veteran"),
+    provider: providerSchema,
+    messages: chatMessagesSchema,
+    track: z.enum(["veteran", "spouseEmployed", "spouseHousehold"], {
+      errorMap: () => ({ message: "That isn't a valid track." }),
+    }),
+  }),
+]);
 
 export const cvExportBodySchema = z.object({
   format: z.enum(["pdf", "docx"], { errorMap: () => ({ message: "Pick a valid export format." }) }),

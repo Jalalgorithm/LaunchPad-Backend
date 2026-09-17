@@ -4,7 +4,7 @@ import { getAvailableProviders } from "./ai.provider";
 import { improveCv } from "./cv.service";
 import { buddyReply } from "./chat.service";
 import { renderCvDocx, renderCvPdf } from "./cv-export.service";
-import type { AiProvider, ChatTurn } from "./ai.types";
+import type { AiProvider, ChatInput } from "./ai.types";
 
 export async function providers(_req: Request, res: Response) {
   sendSuccess(res, 200, "Providers loaded.", getAvailableProviders());
@@ -24,8 +24,8 @@ export async function cvAssist(req: Request, res: Response) {
 }
 
 export async function chat(req: Request, res: Response) {
-  const { provider, messages } = req.body as { provider: AiProvider; messages: ChatTurn[] };
-  const reply = await buddyReply(provider, messages);
+  const input = req.body as ChatInput;
+  const reply = await buddyReply(input);
   sendSuccess(res, 200, "Reply ready.", { reply });
 }
 

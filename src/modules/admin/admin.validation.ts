@@ -17,9 +17,10 @@ export const linkIdParamSchema = z.object({
 
 export const courseKeyParamSchema = z.object({
   userId: z.string().uuid("That isn't a valid user reference."),
-  courseKey: z.enum(["lift", "stem", "lion_voices", "rise_awareness", "rise_resilience"], {
-    errorMap: () => ({ message: "That isn't a valid course." }),
-  }),
+  courseKey: z.enum(
+    ["lift", "stem", "lion_voices", "rise_awareness", "rise_resilience", "esol_application", "dbs_application"],
+    { errorMap: () => ({ message: "That isn't a valid course." }) }
+  ),
 });
 
 export const courseStatusBodySchema = z.object({

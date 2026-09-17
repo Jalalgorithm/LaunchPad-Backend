@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authGuard } from "../../middleware/authGuard";
 import { validate } from "../../middleware/validate";
-import { choosePathwaySchema, courseKeyParamSchema } from "./progress.validation";
+import { choosePathwaySchema, courseKeyParamSchema, setAdultModulesSchema } from "./progress.validation";
 import * as progressController from "./progress.controller";
 
 export const progressRouter = Router();
@@ -104,3 +104,29 @@ progressRouter.get("/certificate-status", asyncHandler(progressController.certif
  *       403: { description: Not yet certified }
  */
 progressRouter.post("/certificate-link", asyncHandler(progressController.issueMyCertificateLink));
+
+/**
+ * @openapi
+ * /me/adult-modules:
+ *   patch:
+ *     tags: [Progress]
+ *     summary: Switch the Adult Pathway's optional sections on/off
+ *     description: A view preference (which sections are visible), not a completion record — partial update.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               esolModuleOn: { type: boolean }
+ *               rqfModuleOn: { type: boolean }
+ *     responses:
+ *       200: { description: Modules updated }
+ *       422: { description: Neither field provided }
+ */
+progressRouter.patch(
+  "/adult-modules",
+  validate({ body: setAdultModulesSchema }),
+  asyncHandler(progressController.setAdultModules)
+);

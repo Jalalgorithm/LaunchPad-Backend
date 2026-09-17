@@ -30,6 +30,7 @@ const schoolResultSchema = generalResultSchema.extend({
 interface ProfileRow extends RowDataPacket {
   kind: TranslateKind;
   provider: "openai" | "gemini";
+  inputs: string;
   summary: string;
   // JSON columns come back from mysql2 as raw text, not auto-parsed — every
   // one of these needs an explicit JSON.parse in mapRow.
@@ -45,6 +46,7 @@ function mapRow(row: ProfileRow): TranslateProfile {
   return {
     kind: row.kind,
     provider: row.provider,
+    inputs: JSON.parse(row.inputs) as Record<string, unknown>,
     summary: row.summary,
     skills: JSON.parse(row.skills) as SkillItem[],
     stemSparks: row.stem_sparks ? (JSON.parse(row.stem_sparks) as string[]) : null,
@@ -57,7 +59,7 @@ function mapRow(row: ProfileRow): TranslateProfile {
 
 export async function getMyTranslateProfiles(userId: string): Promise<MyTranslateProfiles> {
   const [rows] = await pool.query<ProfileRow[]>(
-    `SELECT kind, provider, summary, skills, stem_sparks, reveal, role_matches, concern, updated_at
+    `SELECT kind, provider, inputs, summary, skills, stem_sparks, reveal, role_matches, concern, updated_at
        FROM translate_profiles WHERE user_id = ?`,
     [userId]
   );
@@ -141,7 +143,7 @@ async function upsert(userId: string, kind: TranslateKind, input: TranslateInput
   );
 
   const [rows] = await pool.query<ProfileRow[]>(
-    `SELECT kind, provider, summary, skills, stem_sparks, reveal, role_matches, concern, updated_at
+    `SELECT kind, provider, inputs, summary, skills, stem_sparks, reveal, role_matches, concern, updated_at
        FROM translate_profiles WHERE user_id = ? AND kind = ? LIMIT 1`,
     [userId, kind]
   );

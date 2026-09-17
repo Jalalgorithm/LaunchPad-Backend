@@ -11,6 +11,7 @@ export interface SkillItem {
 export interface TranslateProfile {
   kind: TranslateKind;
   provider: AiProvider;
+  inputs: Record<string, unknown>;
   summary: string;
   skills: SkillItem[];
   stemSparks: string[] | null;

@@ -10,6 +10,8 @@ export const COURSES = {
   stem: { label: 'STEM Sports', required: false, group: 'prerequisite' },
   rise_awareness: { label: 'Raise Awareness', required: true, group: 'rise' },
   rise_resilience: { label: 'Build Resilience', required: true, group: 'rise' },
+  esol_application: { label: 'ESOL Application Training', required: false, group: 'adult' },
+  dbs_application: { label: 'DBS Application Training', required: false, group: 'adult' },
 } as const;
 
 export type CourseKey = keyof typeof COURSES;
@@ -18,6 +20,7 @@ export type CourseGroup = (typeof COURSES)[CourseKey]['group'];
 export const COURSE_KEYS = Object.keys(COURSES) as CourseKey[];
 export const PREREQUISITE_COURSE_KEYS = COURSE_KEYS.filter((k) => COURSES[k].group === 'prerequisite');
 export const RISE_COURSE_KEYS = COURSE_KEYS.filter((k) => COURSES[k].group === 'rise');
+export const ADULT_COURSE_KEYS = COURSE_KEYS.filter((k) => COURSES[k].group === 'adult');
 
 /** Translate unlocks once every *required* prerequisite course is completed. */
 export const TRANSLATE_REQUIRED_COURSES = PREREQUISITE_COURSE_KEYS.filter((k) => COURSES[k].required);

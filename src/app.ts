@@ -15,6 +15,7 @@ import { progressRouter } from "./modules/progress/progress.routes";
 import { certificatesRouter } from "./modules/certificates/certificates.routes";
 import { aiRouter } from "./modules/ai/ai.routes";
 import { translateRouter } from "./modules/translate/translate.routes";
+import { draftsRouter } from "./modules/drafts/drafts.routes";
 import { waitlistRouter } from "./modules/waitlist/waitlist.routes";
 import { easyAskRouter } from "./modules/easyask/easyask.routes";
 
@@ -68,6 +69,7 @@ export function createApp() {
   app.use("/api/me", progressRouter);
   app.use("/api/me", aiRouter);
   app.use("/api/me", translateRouter);
+  app.use("/api/me", draftsRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/certificates", certificatesRouter);
   // Public IGMS marketing-site waitlist. POST is unauthenticated; the list and
