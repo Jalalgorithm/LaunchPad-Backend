@@ -13,9 +13,13 @@ import { ApiError } from "../../utils/ApiError";
 import { newId, normalizeEmail } from "../../utils/hash";
 import {
   APPLICANT_ROLE_LABELS,
+  CONTACT_CHANNEL_LABELS,
+  PHONE_METHOD_LABELS,
   programmeNames,
   sortProgrammes,
   type ApplicantRole,
+  type ContactChannel,
+  type PhoneMethod,
   type ProgrammeId,
 } from "./waitlist.catalogue";
 import { buildCsv } from "./waitlist.csv";
@@ -32,6 +36,8 @@ interface EntryRow extends RowDataPacket {
   full_name: string;
   email: string;
   phone: string | null;
+  phone_methods: string | null;
+  contact_channels: string | null;
   applicant_role: ApplicantRole;
   access_needs: string | null;
   consented_at: Date;
@@ -51,6 +57,9 @@ export interface WaitlistEntry {
 
 export interface WaitlistAdminEntry extends WaitlistEntry {
   phone: string | null;
+  phoneMethods: PhoneMethod[];
+  /** Empty for entries made before per-channel consent existed. */
+  contactChannels: ContactChannel[];
   role: ApplicantRole;
   roleLabel: string;
   accessNeeds: string | null;
@@ -74,6 +83,19 @@ function splitProgrammes(concatenated: string | null): ProgrammeId[] {
   return sortProgrammes(concatenated.split(",") as ProgrammeId[]);
 }
 
+/** mysql2 returns SET columns as a comma-joined string. */
+function splitSet<T extends string>(value: string | null): T[] {
+  return value ? (value.split(",").filter(Boolean) as T[]) : [];
+}
+
+function contactSummary(entry: WaitlistAdminEntry): string {
+  return entry.contactChannels.map((c) => CONTACT_CHANNEL_LABELS[c]).join(", ") || "Not recorded";
+}
+
+function phoneMethodsSummary(entry: WaitlistAdminEntry): string {
+  return entry.phoneMethods.map((m) => PHONE_METHOD_LABELS[m]).join(" or ");
+}
+
 function firstNameOf(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? fullName;
 }
@@ -91,6 +113,8 @@ function toEmailView(entry: WaitlistAdminEntry, consentedAt: Date): WaitlistEmai
     firstName: firstNameOf(entry.fullName),
     email: entry.email,
     phone: entry.phone ?? "",
+    phoneMethods: phoneMethodsSummary(entry),
+    contactChannels: contactSummary(entry),
     roleLabel: entry.roleLabel,
     programmeNames: programmeNames(entry.programmes),
     accessNeeds: entry.accessNeeds ?? "",
@@ -118,8 +142,9 @@ async function insertEntry(input: JoinWaitlistInput, consentedAt: Date): Promise
       await withTransaction(async (conn) => {
         await conn.query(
           `INSERT INTO igms_waitlist_entries
-             (id, reference, full_name, email, email_normalized, phone, applicant_role, access_needs, consented_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (id, reference, full_name, email, email_normalized, phone, phone_methods,
+              applicant_role, access_needs, contact_channels, consented_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             id,
             reference,
@@ -127,8 +152,10 @@ async function insertEntry(input: JoinWaitlistInput, consentedAt: Date): Promise
             input.email,
             emailNormalized,
             input.phone ?? null,
+            input.phoneMethods?.join(",") ?? null,
             input.role,
             input.accessNeeds ?? null,
+            input.contactChannels?.join(",") ?? null,
             consentedAt,
           ]
         );
@@ -189,6 +216,8 @@ function toAdminEntry(row: EntryRow): WaitlistAdminEntry {
     programmes: splitProgrammes(row.programmes),
     submittedAt: row.created_at.toISOString(),
     phone: row.phone,
+    phoneMethods: splitSet<PhoneMethod>(row.phone_methods),
+    contactChannels: splitSet<ContactChannel>(row.contact_channels),
     role: row.applicant_role,
     roleLabel: APPLICANT_ROLE_LABELS[row.applicant_role],
     accessNeeds: row.access_needs,
@@ -211,6 +240,8 @@ const CSV_HEADER = [
   "Name",
   "Email",
   "Phone",
+  "Phone contact by",
+  "Contact consent",
   "Joining as",
   "Programmes",
   "Access needs",
@@ -228,6 +259,8 @@ export async function buildWaitlistCsv(): Promise<{
     entry.fullName,
     entry.email,
     entry.phone ?? "",
+    phoneMethodsSummary(entry),
+    contactSummary(entry),
     entry.roleLabel,
     programmeNames(entry.programmes).join("; "),
     entry.accessNeeds ?? "",

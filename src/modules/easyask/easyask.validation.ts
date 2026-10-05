@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cleanMultiline } from "../../utils/sanitize";
 
 /**
  * Mirrors the EasyAsk modal on the IGMS site. The client caps the free-text
@@ -8,7 +9,9 @@ import { z } from "zod";
 export const shortNoteBodySchema = z
   .object({
     context: z.enum(["work", "doctor", "school", "transport"], {
-      errorMap: () => ({ message: "Choose where you need to ask for support." }),
+      errorMap: () => ({
+        message: "Choose where you need to ask for support.",
+      }),
     }),
 
     transportMode: z
@@ -19,22 +22,36 @@ export const shortNoteBodySchema = z
 
     difficulty: z
       .string()
-      .trim()
-      .min(3, "Tell us a little about what is making things hard.")
-      .max(400, "Please keep this under 400 characters."),
+      .max(2000, "Please keep this under 400 characters.")
+      .transform(cleanMultiline)
+      .pipe(
+        z
+          .string()
+          .min(3, "Tell us a little about what is making things hard.")
+          .max(400, "Please keep this under 400 characters."),
+      ),
 
     help: z
       .string()
-      .trim()
-      .min(3, "Tell us what would help.")
-      .max(400, "Please keep this under 400 characters."),
+      .max(2000, "Please keep this under 400 characters.")
+      .transform(cleanMultiline)
+      .pipe(
+        z
+          .string()
+          .min(3, "Tell us what would help.")
+          .max(400, "Please keep this under 400 characters."),
+      ),
 
     // Optional so the public client never has to know which providers exist.
     provider: z.enum(["openai", "gemini"]).optional(),
   })
-  .refine((body) => body.context !== "transport" || Boolean(body.transportMode), {
-    message: "Choose whether the journey is by land, sea or air.",
-    path: ["transportMode"],
-  });
+  .strict()
+  .refine(
+    (body) => body.context !== "transport" || Boolean(body.transportMode),
+    {
+      message: "Choose whether the journey is by land, sea or air.",
+      path: ["transportMode"],
+    },
+  );
 
 export type ShortNoteInput = z.infer<typeof shortNoteBodySchema>;

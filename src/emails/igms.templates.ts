@@ -145,6 +145,10 @@ export interface WaitlistEmailView {
   firstName: string;
   email: string;
   phone: string;
+  /** "Call", "WhatsApp" or "Call or WhatsApp"; empty when no phone. */
+  phoneMethods: string;
+  /** Channels they consented to, e.g. "Email, Phone". */
+  contactChannels: string;
   roleLabel: string;
   programmeNames: readonly string[];
   accessNeeds: string;
@@ -227,6 +231,8 @@ export function igmsWaitlistAdminEmail(
         { label: "Name", value: entry.fullName },
         { label: "Email", value: entry.email },
         { label: "Phone", value: entry.phone },
+        { label: "Phone contact by", value: entry.phoneMethods },
+        { label: "Contact consent", value: entry.contactChannels },
         { label: "Joining as", value: entry.roleLabel },
         { label: "Programmes", value: entry.programmeNames.join(", ") },
         { label: "Access needs", value: entry.accessNeeds },
@@ -247,6 +253,8 @@ export function igmsWaitlistAdminEmail(
       `Name:         ${entry.fullName}`,
       `Email:        ${entry.email}`,
       `Phone:        ${entry.phone || "—"}`,
+      `Phone by:     ${entry.phoneMethods || "—"}`,
+      `Contact via:  ${entry.contactChannels}`,
       `Joining as:   ${entry.roleLabel}`,
       `Programmes:   ${entry.programmeNames.join(", ")}`,
       `Access needs: ${entry.accessNeeds || "—"}`,

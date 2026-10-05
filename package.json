@@ -28,6 +28,7 @@
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "libphonenumber-js": "^1.13.14",
     "mysql2": "^3.11.0",
     "openai": "^7.4.0",
     "pino": "^9.4.0",

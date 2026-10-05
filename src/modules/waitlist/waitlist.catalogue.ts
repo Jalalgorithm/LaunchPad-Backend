@@ -2,8 +2,8 @@
  * The programmes the IGMS site offers a waitlist for, and how each one is
  * named in email and in the CSV.
  *
- * These ids are a contract with three things at once: the ENUM in migration
- * 006, the `ProgrammeId` union in the IGMS frontend, and the values below.
+ * These ids are a contract with three things at once: the ENUM in migrations
+ * 006/009, the `ProgrammeId` union in the IGMS frontend, and the values below.
  * Adding a programme means changing all three.
  */
 export const PROGRAMME_IDS = [
@@ -14,6 +14,7 @@ export const PROGRAMME_IDS = [
   "launchpad-school",
   "launchpad-veterans",
   "launchpad-rise-plus",
+  "launchpad-digital-work-ready",
   "resources-guidebooks",
 ] as const;
 
@@ -27,6 +28,7 @@ export const PROGRAMME_NAMES: Record<ProgrammeId, string> = {
   "launchpad-school": "LaunchPad101 — School edition",
   "launchpad-veterans": "LaunchPad101 — Veterans & spouses",
   "launchpad-rise-plus": "LaunchPad101 — RISE+",
+  "launchpad-digital-work-ready": "LaunchPad101 — Digital Work Ready",
   "resources-guidebooks": "Resources & Guidebooks",
 };
 
@@ -46,6 +48,25 @@ export const APPLICANT_ROLE_LABELS: Record<ApplicantRole, string> = {
   referrer: "Referring someone",
   "partner-organisation": "Partner organisation",
   other: "Other",
+};
+
+/** Channels a joiner can consent to be contacted by. Mirrors migration 009. */
+export const CONTACT_CHANNELS = ["email", "phone", "post"] as const;
+export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
+
+/** How a joiner who gave a number wants it used. Mirrors migration 009. */
+export const PHONE_METHODS = ["call", "whatsapp"] as const;
+export type PhoneMethod = (typeof PHONE_METHODS)[number];
+
+export const CONTACT_CHANNEL_LABELS: Record<ContactChannel, string> = {
+  email: "Email",
+  phone: "Phone",
+  post: "Post",
+};
+
+export const PHONE_METHOD_LABELS: Record<PhoneMethod, string> = {
+  call: "Call",
+  whatsapp: "WhatsApp",
 };
 
 /** Catalogue order, so email and CSV never list the same choices differently. */
