@@ -3,11 +3,12 @@
  * named in email and in the CSV.
  *
  * These ids are a contract with three things at once: the ENUM in migrations
- * 006/009, the `ProgrammeId` union in the IGMS frontend, and the values below.
+ * 006/009/010, the `ProgrammeId` union in the IGMS frontend, and the values below.
  * Adding a programme means changing all three.
  */
 export const PROGRAMME_IDS = [
   "lift-project",
+  "thrive-forward",
   "stem-sports",
   "launchpad-adult",
   "launchpad-thrive101",
@@ -16,12 +17,14 @@ export const PROGRAMME_IDS = [
   "launchpad-rise-plus",
   "launchpad-digital-work-ready",
   "resources-guidebooks",
+  "thrive-forward-guidebook",
 ] as const;
 
 export type ProgrammeId = (typeof PROGRAMME_IDS)[number];
 
 export const PROGRAMME_NAMES: Record<ProgrammeId, string> = {
   "lift-project": "The Lift Project",
+  "thrive-forward": "Thrive Forward Skills & Wellness Navigator",
   "stem-sports": "STEM Sports",
   "launchpad-adult": "LaunchPad101 — Adult pathway",
   "launchpad-thrive101": "LaunchPad101 — Thrive101",
@@ -30,6 +33,7 @@ export const PROGRAMME_NAMES: Record<ProgrammeId, string> = {
   "launchpad-rise-plus": "LaunchPad101 — RISE+",
   "launchpad-digital-work-ready": "LaunchPad101 — Digital Work Ready",
   "resources-guidebooks": "Resources & Guidebooks",
+  "thrive-forward-guidebook": "Thrive Forward — Refugee Skills & Wellness Navigator (guidebook)",
 };
 
 export const APPLICANT_ROLES = [
