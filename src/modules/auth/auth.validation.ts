@@ -7,7 +7,7 @@ import { z } from "zod";
  */
 
 const email = z
-  .string({ required_error: "Please enter your email address." })
+  .string({ error: "Please enter your email address." })
   .trim()
   .min(1, "Please enter your email address.")
   .max(255, "That email address is too long.")
@@ -15,12 +15,12 @@ const email = z
   .transform((value) => value.toLowerCase());
 
 const code = z
-  .string({ required_error: "Please enter the 6-digit code we emailed you." })
+  .string({ error: "Please enter the 6-digit code we emailed you." })
   .trim()
   .regex(/^\d{6}$/, "Enter the 6-digit code from your email.");
 
 const password = z
-  .string({ required_error: "Please choose a password." })
+  .string({ error: "Please choose a password." })
   .min(10, "Use at least 10 characters — longer passwords are much harder to guess.")
   // bcrypt silently ignores anything past 72 bytes, so reject it rather than
   // letting someone believe a 100-character password is fully protecting them.
@@ -29,7 +29,7 @@ const password = z
   .regex(/[0-9]/, "Include at least one number.");
 
 const name = z
-  .string({ required_error: "Please tell us what to call you." })
+  .string({ error: "Please tell us what to call you." })
   .trim()
   .min(2, "Please enter at least 2 characters.")
   .max(100, "That name is too long.");
@@ -53,7 +53,7 @@ const stepToken = z.string().min(1);
 /** Same rules as signup's optional dateOfBirth, but required — used when a user adds it after the fact. */
 export const updateProfileSchema = z.object({
   dateOfBirth: z
-    .string({ required_error: "Please enter your date of birth." })
+    .string({ error: "Please enter your date of birth." })
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD.")
     .refine((value) => !Number.isNaN(Date.parse(value)), "That isn't a real date.")
     .refine((value) => {
@@ -74,9 +74,9 @@ export const signupCompleteSchema = z
     name,
     dateOfBirth,
     password,
-    confirmPassword: z.string({ required_error: "Please confirm your password." }),
+    confirmPassword: z.string({ error: "Please confirm your password." }),
     acceptTerms: z.literal(true, {
-      errorMap: () => ({ message: "Please accept the terms and privacy policy to continue." }),
+      error: "Please accept the terms and privacy policy to continue.",
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -88,7 +88,7 @@ export const signupCompleteSchema = z
 
 export const loginSchema = z.object({
   email,
-  password: z.string({ required_error: "Please enter your password." }).min(1, "Please enter your password."),
+  password: z.string({ error: "Please enter your password." }).min(1, "Please enter your password."),
 });
 
 export const loginCodeRequestSchema = z.object({ email });
@@ -105,7 +105,7 @@ export const resetPasswordSchema = z
   .object({
     resetToken: stepToken,
     newPassword: password,
-    confirmPassword: z.string({ required_error: "Please confirm your password." }),
+    confirmPassword: z.string({ error: "Please confirm your password." }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Those passwords don't match.",
@@ -115,10 +115,10 @@ export const resetPasswordSchema = z
 export const changePasswordSchema = z
   .object({
     currentPassword: z
-      .string({ required_error: "Please enter your current password." })
+      .string({ error: "Please enter your current password." })
       .min(1, "Please enter your current password."),
     newPassword: password,
-    confirmPassword: z.string({ required_error: "Please confirm your new password." }),
+    confirmPassword: z.string({ error: "Please confirm your new password." }),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Those passwords don't match.",

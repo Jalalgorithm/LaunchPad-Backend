@@ -64,13 +64,13 @@ export const joinWaitlistSchema = z
       }),
 
     role: z.enum(APPLICANT_ROLES, {
-      errorMap: () => ({ message: "Choose how you are joining." }),
+      error: "Choose how you are joining.",
     }),
 
     programmes: z
       .array(
         z.enum(PROGRAMME_IDS, {
-          errorMap: () => ({ message: "That is not a programme we run." }),
+          error: "That is not a programme we run.",
         }),
       )
       .min(1, "Choose at least one programme to join the waitlist for.")
@@ -90,9 +90,7 @@ export const joinWaitlistSchema = z
     // Only `true` is acceptable. Consent is the lawful basis for holding any of
     // this, so a missing or false value is a hard failure, not a default.
     consent: z.literal(true, {
-      errorMap: () => ({
-        message: "We need your permission before we can contact you.",
-      }),
+      error: "We need your permission before we can contact you.",
     }),
 
     // Optional so an older client that only sends `consent` keeps working;
@@ -100,9 +98,7 @@ export const joinWaitlistSchema = z
     contactChannels: z
       .array(
         z.enum(CONTACT_CHANNELS, {
-          errorMap: () => ({
-            message: "That is not a way we can contact you.",
-          }),
+          error: "That is not a way we can contact you.",
         }),
       )
       .min(1, "Tick at least one way we can contact you about your place.")
@@ -112,7 +108,7 @@ export const joinWaitlistSchema = z
     phoneMethods: z
       .array(
         z.enum(PHONE_METHODS, {
-          errorMap: () => ({ message: "Choose call or WhatsApp." }),
+          error: "Choose call or WhatsApp.",
         }),
       )
       .optional()

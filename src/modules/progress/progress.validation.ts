@@ -4,13 +4,13 @@ import { z } from "zod";
 export const courseKeyParamSchema = z.object({
   courseKey: z.enum(
     ["lift", "stem", "lion_voices", "rise_awareness", "rise_resilience", "esol_application", "dbs_application"],
-    { errorMap: () => ({ message: "That isn't a valid course." }) }
+    { error: "That isn't a valid course." }
   ),
 });
 
 export const choosePathwaySchema = z.object({
   pathway: z.enum(["thrive", "adult", "school", "veterans", "rise"], {
-    errorMap: () => ({ message: "That isn't a valid pathway." }),
+    error: "That isn't a valid pathway.",
   }),
 });
 

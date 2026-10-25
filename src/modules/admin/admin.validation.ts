@@ -19,25 +19,25 @@ export const courseKeyParamSchema = z.object({
   userId: z.string().uuid("That isn't a valid user reference."),
   courseKey: z.enum(
     ["lift", "stem", "lion_voices", "rise_awareness", "rise_resilience", "esol_application", "dbs_application"],
-    { errorMap: () => ({ message: "That isn't a valid course." }) }
+    { error: "That isn't a valid course." }
   ),
 });
 
 export const courseStatusBodySchema = z.object({
   status: z.enum(["enrolled", "in_progress", "completed"], {
-    errorMap: () => ({ message: "Status must be enrolled, in_progress, or completed." }),
+    error: "Status must be enrolled, in_progress, or completed.",
   }),
 });
 
 export const pathwayParamSchema = z.object({
   userId: z.string().uuid("That isn't a valid user reference."),
   pathway: z.enum(["thrive", "adult", "school", "veterans", "rise"], {
-    errorMap: () => ({ message: "That isn't a valid pathway." }),
+    error: "That isn't a valid pathway.",
   }),
 });
 
 export const pathwayBodySchema = z.object({
   pathway: z.enum(["thrive", "adult", "school", "veterans", "rise"], {
-    errorMap: () => ({ message: "That isn't a valid pathway." }),
+    error: "That isn't a valid pathway.",
   }),
 });

@@ -3,7 +3,7 @@ import { z } from "zod";
 /** Max-lengths mirrored from ai.validation.ts's cvExportBodySchema — same fields, same limits. */
 export const cvVariantParamSchema = z.object({
   variant: z.enum(["thrive", "adult", "veteran"], {
-    errorMap: () => ({ message: "That isn't a valid CV variant." }),
+    error: "That isn't a valid CV variant.",
   }),
 });
 

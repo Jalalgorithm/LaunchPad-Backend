@@ -19,7 +19,7 @@ const veteranSchema = z.object({
   kind: z.literal("veteran"),
   provider: providerSchema,
   track: z.enum(["veteran", "spouseEmployed", "spouseHousehold"], {
-    errorMap: () => ({ message: "Pick a valid track." }),
+    error: "Pick a valid track.",
   }),
   in1: z.string().min(1, "Fill in the first field before running Translate.").max(2000),
   in2: z.string().min(1, "Fill in the second field before running Translate.").max(2000),

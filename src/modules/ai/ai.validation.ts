@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const providerSchema = z.enum(["openai", "gemini"], {
-  errorMap: () => ({ message: "Pick a valid AI provider." }),
+  error: "Pick a valid AI provider.",
 });
 
 export const cvAssistBodySchema = z.object({
@@ -29,13 +29,13 @@ export const chatBodySchema = z.discriminatedUnion("persona", [
     provider: providerSchema,
     messages: chatMessagesSchema,
     track: z.enum(["veteran", "spouseEmployed", "spouseHousehold"], {
-      errorMap: () => ({ message: "That isn't a valid track." }),
+      error: "That isn't a valid track.",
     }),
   }),
 ]);
 
 export const cvExportBodySchema = z.object({
-  format: z.enum(["pdf", "docx"], { errorMap: () => ({ message: "Pick a valid export format." }) }),
+  format: z.enum(["pdf", "docx"], { error: "Pick a valid export format." }),
   name: z.string().max(100).default(""),
   role: z.string().max(150).default(""),
   email: z.string().max(150).default(""),

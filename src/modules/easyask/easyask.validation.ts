@@ -9,14 +9,12 @@ import { cleanMultiline } from "../../utils/sanitize";
 export const shortNoteBodySchema = z
   .object({
     context: z.enum(["work", "doctor", "school", "transport"], {
-      errorMap: () => ({
-        message: "Choose where you need to ask for support.",
-      }),
+      error: "Choose where you need to ask for support.",
     }),
 
     transportMode: z
       .enum(["land", "sea", "air"], {
-        errorMap: () => ({ message: "Choose the kind of journey." }),
+        error: "Choose the kind of journey.",
       })
       .optional(),
 
