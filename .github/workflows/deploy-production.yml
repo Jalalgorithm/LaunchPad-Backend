@@ -1,0 +1,99 @@
+# Every push to main deploys the backend to the IONOS VPS.
+#
+# 1. Typechecks and builds here, so broken code never reaches the server.
+# 2. Connects over SSH and runs deploy/update.sh from THIS commit (piped in,
+#    so the server always runs the script version being shipped). That script
+#    backs up the database, builds, migrates, restarts and health-checks —
+#    and rolls the code back if the health check fails.
+#
+# Secrets (Settings → Secrets and variables → Actions) — the same values as
+# the frontend repository:
+#   SSH_HOST      217.154.57.237
+#   SSH_USER      deploy
+#   SSH_KEY       the private GitHub deploy key
+#   KNOWN_HOSTS   the "217.154.57.237 ssh-ed25519 AAAA…" line from ssh-keyscan
+#   SSH_PORT      optional, defaults to 22
+
+name: Deploy backend
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm audit --omit=dev --audit-level=high
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deploy
+
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          trim() { printf '%s' "$1" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          host="$(trim "$SSH_HOST")"; user="$(trim "$SSH_USER")"; port="$(trim "${SSH_PORT:-22}")"
+          [ -n "$host" ] && [ -n "$user" ] && [ -n "$SSH_KEY" ] && [ -n "$KNOWN_HOSTS" ] \
+            || { echo "::error::Set SSH_HOST, SSH_USER, SSH_KEY and KNOWN_HOSTS secrets."; exit 1; }
+
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          # Accept ssh-keyscan output with or without the leading host name.
+          if [ "$port" = 22 ]; then hostpat="$host"; else hostpat="[$host]:$port"; fi
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' | while read -r line; do
+            case "$line" in ''|\#*) continue;; esac
+            case "$line" in ssh-*|ecdsa-*) echo "$hostpat $line" ;; *) echo "$line" ;; esac
+          done > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+          ssh-keygen -F "$hostpat" -f ~/.ssh/known_hosts >/dev/null \
+            || { echo "::error::KNOWN_HOSTS has no key for $hostpat. Run: ssh-keyscan -t ed25519 $host"; exit 1; }
+
+          cat > ~/.ssh/config <<EOF
+          Host deploy
+            HostName $host
+            User $user
+            Port $port
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ConnectTimeout 20
+            ServerAliveInterval 15
+          EOF
+          chmod 600 ~/.ssh/config
+          ssh deploy 'echo "Connected as $(whoami)"'
+
+      - name: Deploy
+        # pm2 and node live in the deploy user's login PATH; a login shell finds them.
+        run: ssh deploy 'bash -l -s' < deploy/update.sh

@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Everyday commands for the IGMS server. Installed once with:
+#   sudo ln -sf /srv/igms-api/deploy/igms /usr/local/bin/igms
+# then just type `igms` to see what it can do.
+set -euo pipefail
+
+APP_DIR="/srv/igms-api"
+APP_NAME="igms-api"
+HEALTH_URL="http://127.0.0.1:4000/health"
+BACKUP_DIR="$HOME/backups"
+
+bold() { printf '\033[1m%s\033[0m\n' "$*"; }
+ok()   { printf '\033[32m✔ %s\033[0m\n' "$*"; }
+bad()  { printf '\033[31m✘ %s\033[0m\n' "$*"; }
+
+healthy() {
+  for _ in $(seq 1 15); do
+    curl -fsS --max-time 3 "$HEALTH_URL" 2>/dev/null | grep -q '"success":true' && return 0
+    sleep 1
+  done
+  return 1
+}
+
+cmd_help() {
+  cat <<'EOF'
+igms — everyday server tasks
+
+  igms status        Is everything up? (backend, website, database, disk, memory)
+  igms logs          Live backend logs (Ctrl+C to stop)
+  igms errors        Last 100 backend error lines
+  igms restart       Restart the backend and check it came back
+  igms update        Pull the latest backend from GitHub and deploy it
+                     (normally automatic on every push to main)
+  igms env           Safely edit the backend settings (.env)
+  igms env-restore   Put back the previous .env
+  igms backup        Back up the database now
+  igms backups       List database backups
+  igms ssl           Show when the HTTPS certificate renews
+  igms security      Pending updates, firewall and blocked login attempts
+EOF
+}
+
+cmd_status() {
+  bold "Backend"
+  if healthy; then ok "API healthy ($HEALTH_URL)"; else bad "API not responding — try: igms errors"; fi
+  pm2 describe "$APP_NAME" 2>/dev/null | grep -E 'status|uptime|restarts' | sed 's/^/  /' || true
+  bold "Version"
+  (cd "$APP_DIR" && git log -1 --format='  %h %s (%cr)')
+  bold "Website"
+  if systemctl is-active --quiet nginx; then ok "nginx running"; else bad "nginx stopped — sudo systemctl start nginx"; fi
+  bold "Database"
+  if systemctl is-active --quiet mysql; then ok "MySQL running"; else bad "MySQL stopped — sudo systemctl start mysql"; fi
+  bold "Last backup"
+  ls -1t "$BACKUP_DIR"/*.sql.gz 2>/dev/null | head -1 | sed 's/^/  /' || echo "  none yet"
+  bold "Disk and memory"
+  df -h / | awk 'NR==2{print "  Disk: "$3" used of "$2" ("$5")"}'
+  free -h | awk '/Mem:/{print "  RAM:  "$3" used of "$2}'
+}
+
+cmd_restart() {
+  pm2 restart "$APP_NAME" --update-env >/dev/null
+  if healthy; then ok "Backend restarted and healthy"; else bad "Backend did not come back — run: igms errors"; exit 1; fi
+}
+
+cmd_env() {
+  cd "$APP_DIR"
+  local backup=".env.bak-$(date +%Y%m%d-%H%M%S)"
+  cp -p .env "$backup"
+  bold "Editing $APP_DIR/.env — save with Ctrl+O, Enter; exit with Ctrl+X."
+  nano .env
+  chmod 600 .env
+  if cmp -s .env "$backup"; then
+    rm -f "$backup"; ok "No changes made."; return
+  fi
+  bold "Restarting the backend with the new settings…"
+  pm2 restart "$APP_NAME" --update-env >/dev/null
+  if healthy; then
+    ok "New settings are live. Previous version kept as $backup"
+    # Keep the 5 most recent .env backups.
+    ls -1t .env.bak-* 2>/dev/null | tail -n +6 | xargs -r rm -f
+  else
+    bad "The backend did not start with the new settings — putting the old ones back."
+    pm2 logs "$APP_NAME" --err --lines 15 --nostream || true
+    cp -p "$backup" .env
+    pm2 restart "$APP_NAME" --update-env >/dev/null
+    if healthy; then ok "Restored the previous settings; the site is running."; else bad "Still down — run: igms errors"; fi
+    exit 1
+  fi
+}
+
+cmd_env_restore() {
+  cd "$APP_DIR"
+  local latest
+  latest="$(ls -1t .env.bak-* 2>/dev/null | head -1 || true)"
+  [ -n "$latest" ] || { bad "No .env backup found."; exit 1; }
+  cp -p "$latest" .env && chmod 600 .env
+  ok "Restored $latest"
+  cmd_restart
+}
+
+cmd_backup() {
+  mkdir -p "$BACKUP_DIR"
+  local file="$BACKUP_DIR/manual-$(date +%Y%m%d-%H%M%S).sql.gz"
+  mysqldump --single-transaction --no-tablespaces igms | gzip > "$file"
+  ok "Saved $file ($(du -h "$file" | cut -f1))"
+}
+
+cmd_security() {
+  bold "Pending updates"
+  apt list --upgradable 2>/dev/null | tail -n +2 | sed 's/^/  /' | head -20
+  bold "Firewall"
+  sudo ufw status | sed 's/^/  /'
+  bold "Blocked login attempts (fail2ban)"
+  sudo fail2ban-client status sshd 2>/dev/null | grep -E 'Currently banned|Total banned' | sed 's/^/  /'
+}
+
+case "${1:-help}" in
+  status)       cmd_status ;;
+  logs)         pm2 logs "$APP_NAME" ;;
+  errors)       pm2 logs "$APP_NAME" --err --lines 100 --nostream ;;
+  restart)      cmd_restart ;;
+  update)       bash "$APP_DIR/deploy/update.sh" ;;
+  env)          cmd_env ;;
+  env-restore)  cmd_env_restore ;;
+  backup)       cmd_backup ;;
+  backups)      ls -lht "$BACKUP_DIR" 2>/dev/null | head -20 ;;
+  ssl)          sudo certbot certificates 2>/dev/null | grep -E 'Domains|Expiry' ;;
+  security)     cmd_security ;;
+  help|-h|--help|*) cmd_help ;;
+esac
