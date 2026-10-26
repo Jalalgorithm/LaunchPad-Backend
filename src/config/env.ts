@@ -57,6 +57,8 @@ const envSchema = z.object({
   // lockup, which is what most recipients see anyway — images are blocked by
   // default in a lot of clients.
   IGMS_LOGO_URL: z.string().url().or(z.literal("")).default(""),
+  // bcrypt hash of the staff export password (see deploy notes). Blank switches exports off.
+  EXPORT_PASSWORD_HASH: z.string().regex(/^\$2[aby]\$\d{2}\$.{53}$/, "Must be a bcrypt hash").or(z.literal("")).default(""),
 
   // AI features (CV assist, Vocational & HR Buddy chat, CV export). Each
   // provider is independently optional — a blank key just disables that

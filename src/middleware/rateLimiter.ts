@@ -122,3 +122,25 @@ export const aiLimiter = buildLimiter({
   limit: 20,
   keyGenerator: (req: Request): string => `ai:user:${req.user?.id ?? req.ip ?? "unknown"}`,
 });
+
+/**
+ * Anonymous street works reports. IP-keyed — there is no email, by design.
+ * Generous enough for a community researcher entering several reports from
+ * one phone in a session; tight enough that a script can't flood the board.
+ */
+export const streetWorksReportLimiter = buildLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+});
+
+/**
+ * The staff data export, behind one shared password. Five wrong passwords
+ * per 15 minutes per IP makes guessing a reasonable password impractical.
+ */
+export const exportLimiter = buildLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  // Only failures count, so signing in and downloading both files never
+  // locks out the person who knows the password — five wrong guesses do.
+  skipSuccessfulRequests: true,
+});

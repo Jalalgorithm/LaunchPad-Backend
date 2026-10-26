@@ -18,6 +18,8 @@ import { translateRouter } from "./modules/translate/translate.routes";
 import { draftsRouter } from "./modules/drafts/drafts.routes";
 import { waitlistRouter } from "./modules/waitlist/waitlist.routes";
 import { easyAskRouter } from "./modules/easyask/easyask.routes";
+import { streetWorksRouter } from "./modules/streetWorks/streetWorks.routes";
+import { exportsRouter } from "./modules/exports/exports.routes";
 
 const allowedOrigins = [
   env.FRONTEND_URL,
@@ -46,7 +48,7 @@ export function createApp() {
         !requestOrigin || requestOrigin === selfOrigin || allowedOrigins.includes(requestOrigin);
       // Deny by omitting the CORS headers (the browser blocks it client-side)
       // rather than throwing, which would turn every rejected origin into a 500.
-      callback(null, { origin: isAllowed, credentials: true });
+      callback(null, { origin: isAllowed, credentials: true, exposedHeaders: ["Content-Disposition"] });
     })
   );
 
@@ -77,6 +79,10 @@ export function createApp() {
   app.use("/api/waitlist", waitlistRouter);
   // Public EasyAsk writing aid. Stateless — see easyask.service.ts.
   app.use("/api/easyask", easyAskRouter);
+  // Public, anonymous Newham street works reports and the hotspot board.
+  app.use("/api/street-works", streetWorksRouter);
+  // Staff spreadsheet downloads, behind the export password.
+  app.use("/api/exports", exportsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
